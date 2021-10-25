@@ -42,7 +42,7 @@ class Customer
   end
 end
 
-# I swapped out rented_at's type for a Date object, more true to life
+# I swapped out rented_at's int type for a Date object, more true to life
 # Added total_amount, rental_points to fetch the respective amounts via the assigned category
 class Rental
   attr_reader :rented_at, :movie
@@ -88,8 +88,8 @@ class Category
     @rental_days    = self.class::RENTAL_DAYS
   end
 
-  # returns the price of a rental for a given date
-  # can apply additional charge for late rentals 
+  # returns the price of a rental of this category for a given rental date
+  # can apply extra charges for late rentals 
   # - only if rental_days and extra_price are set
   def amount_for_rental(rented_at)
     amount         = price_amount 
