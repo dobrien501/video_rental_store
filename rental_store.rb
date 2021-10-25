@@ -3,8 +3,7 @@ require "date"
 
 class Customer
 
-  attr_reader :name
-  attr_accessor :rentals
+  attr_reader :name, :rentals
 
   def initialize(name: )
     @name                = name
@@ -63,7 +62,7 @@ class Rental
 end
 
 class Movie
-  attr_accessor :title, :category
+  attr_reader :title, :category
 
   def initialize(title:, category:)
     @title    = title
