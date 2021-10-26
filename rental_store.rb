@@ -1,5 +1,6 @@
 require "rspec/autorun"
 require "date"
+require "nokogiri"
 
 class Customer
 
@@ -33,11 +34,11 @@ class Customer
   end
 
   def statement
-    puts "Rental Store Statement as of #{Date.today}"
-    puts "============================================="
-    puts "Customer: #{name}, Total: #{total_amount}, Points: #{total_rental_points}"
-    rentals.each do |rental|
-      puts "\t#{rental.movie.title}; Price: #{rental.movie.price} Owed: #{rental.total_amount} Rented On: #{rental.rented_at.to_s}"
+    begin 
+      HtmlFormatter.new(self).statement
+    rescue NameError => e
+      puts "Missing nokogiri for HTML formatting. Falling back to Formatter"
+      Formatter.new(self).statement
     end
   end
 end
@@ -151,6 +152,77 @@ class ChildrensCategory < Category
 end
 
 # END sub-categories
+
+class Formatter
+  attr_reader :customer
+  
+  def initialize(customer)
+    @customer = customer
+  end
+
+  def statement
+    puts "Rental Store Statement as of #{Date.today}"
+    puts "============================================="
+    puts "Customer: #{customer.name}, Total: #{customer.total_amount}, Points: #{customer.total_rental_points}"
+    customer.rentals.each do |rental|
+      puts "\t#{rental.movie.title}; Price: #{rental.movie.price} Owed: #{rental.total_amount} Rented On: #{rental.rented_at.to_s}"
+    end
+  end
+end
+
+class HtmlFormatter < Formatter
+  def statement
+    builder = ::Nokogiri::HTML::Builder.new do |doc|
+      doc.html {
+        doc.body {
+          doc.h1 {
+            doc.text "Rental Store Statement as of #{Date.today}"
+          }
+          doc.p {
+            doc.text "Customer: #{customer.name}, Total: #{customer.total_amount}, Points: #{customer.total_rental_points}"
+          }
+          doc.table {
+            doc.thead {
+              doc.tr {
+                doc.th {
+                  doc.text "Title"
+                }
+                doc.th {
+                  doc.text "Price"
+                }
+                doc.th {
+                  doc.text "Owed"
+                }
+                doc.th {
+                  doc.text "Rented On"
+                }
+              }
+            }
+            doc.tbody {
+              customer.rentals.each do |rental|
+                doc.tr {
+                  doc.td {
+                    doc.text "#{rental.movie.title}"
+                  }
+                  doc.td {
+                    doc.text "#{rental.movie.price}"
+                  }
+                  doc.td {
+                    doc.text "#{rental.total_amount}"
+                  }
+                  doc.td {
+                    doc.text "#{rental.rented_at.to_s}"
+                  }
+                }
+              end
+            }
+          }
+        }
+      }
+    end
+    puts builder.to_html
+  end
+end
 
 # BEGIN SPECS
 RSpec.describe "Rental Store" do
