@@ -15,7 +15,7 @@ $ ./run.sh
 ## Brief
 
 ### Requirements
-Revew the business logic and code then implement the remaining requirements. In addition, include a function to print out the statement in HTML. Consider that in the future you may be asked to add additional formats. Feel free to refactor but stay within the scope of the business logic. 
+Review the business logic and code then implement the remaining requirements. In addition, include a function to print out the statement in HTML. Consider that in the future you may be asked to add additional formats. Feel free to refactor but stay within the scope of the business logic. 
 
 ### Business Logic
 A customer can printout his statement. On the statement must appear:
