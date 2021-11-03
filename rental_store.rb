@@ -21,21 +21,11 @@ class Customer
   end
 
   def total_rental_points
-    points = 0
-    rentals.each do |rental|
-      points += rental.rental_points
-    end
-
-    points
+    rentals.inject(0) { |sum, rental| sum + rental.rental_points }
   end
 
   def total_amount
-    amount = 0
-    rentals.each do |rental|
-      amount += rental.total_amount
-    end
-
-    amount
+    rentals.inject(0) { |sum, rental| sum + rental.total_amount }
   end
 
   def statement
