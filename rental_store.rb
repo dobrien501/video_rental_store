@@ -8,9 +8,12 @@ class Customer
 
   attr_reader :name, :rentals
 
-  def initialize(name: )
+  def initialize(name: , options: {})
     @name                = name
     @rentals             = []
+    @options             = {      # setup options with their defaults
+      formatter: :html
+    }.merge(options)
   end
 
   def add_rental(movie, rented_at)
@@ -36,12 +39,13 @@ class Customer
   end
 
   def statement
-    begin 
-      HtmlFormatter.new(self).statement
+    formatter = begin 
+      Object.const_get("#{@options[:formatter].to_s.capitalize}Formatter").new(self)
     rescue NameError => e
-      puts "Missing nokogiri for HTML formatting. Falling back to Formatter"
-      Formatter.new(self).statement
+      puts "Unknown formatter #{@options[:formatter]}. Falling back to PlainFormatter"
+      PlainFormatter.new(self)
     end
+    formatter.statement
   end
 end
 
@@ -163,6 +167,12 @@ class Formatter
   end
 
   def statement
+    raise 'to be implemented by subclassess'
+  end
+end
+
+class PlainFormatter < Formatter
+  def statement
     puts "Rental Store Statement as of #{Date.today}"
     puts "============================================="
     puts "Customer: #{customer.name}, Total: #{customer.total_amount}, Points: #{customer.total_rental_points}"
@@ -246,6 +256,38 @@ RSpec.describe "Rental Store" do
         it "returns the total amount owed" do
           expect(customer.total_amount).to eql movie.category.price_amount * 2 
         end
+      end
+    end
+
+    describe "#statement" do
+      before :each do
+        allow(STDOUT).to receive(:puts) # silence output
+      end
+
+      it "by default uses the html formatter" do
+        expect(HtmlFormatter).to receive(:new).and_call_original 
+        customer.statement
+      end
+      
+      it "can format in html" do
+        customer = Customer.new(name: "Bob", options: {formatter: :html} )
+        expect(HtmlFormatter).to receive(:new).and_call_original
+
+        customer.statement
+      end
+      
+      it "can format in plain" do
+        customer = Customer.new(name: "Bob", options: {formatter: :plain} )
+        expect(PlainFormatter).to receive(:new).and_call_original 
+
+        customer.statement
+      end
+      
+      it "fallbacks to plain formatter when unknown formatter is specified" do
+        expect(PlainFormatter).to receive(:new).and_call_original
+
+        customer = Customer.new(name: "Bob", options: {formatter: :xml} )
+        customer.statement
       end
     end
   end
