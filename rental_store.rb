@@ -2,6 +2,8 @@ require "rspec/autorun"
 require "date"
 require "nokogiri"
 
+# instance of Customer can rent movies and accumulate rental points
+# and print a statement of rental history
 class Customer
 
   attr_reader :name, :rentals
@@ -43,8 +45,7 @@ class Customer
   end
 end
 
-# I swapped out rented_at's int type for a Date object, more true to life
-# Added total_amount, rental_points to fetch the respective amounts via the assigned category
+# represents the transaction of having rented a movie
 class Rental
   attr_reader :rented_at, :movie
 
@@ -75,10 +76,10 @@ class Movie
   end
 end
 
-# Abstract base class to represent categories
+# Base class to represent categories
 # sets up the standard properties of a category
 # and defines the behaviour for calculating the amount owed in a rental period
-# subclasses can override with their own behaviours where neccessary.
+# subclasses can override with their own behaviours.
 class Category
   attr_reader :price_amount, :extra_price, :rental_days, :rental_point
 
@@ -90,8 +91,7 @@ class Category
   end
 
   # returns the price of a rental of this category for a given rental date
-  # can apply extra charges for late rentals 
-  # - only if rental_days and extra_price are set
+  # can apply extra charges for late rentals when rental_days and extra_price are set
   def amount_for_rental(rented_at)
     amount         = price_amount 
     additonal_days = [0, days_rented(rented_at) - rental_days].max  # only interested in positive
@@ -111,7 +111,7 @@ class Category
   end
 end
 
-# BEGIN subclasses of Category to define sub-category specific behaviours
+# BEGIN sub-categories
 class RegularCategory < Category
   PRICE_AMOUNT = 2.00
   EXTRA_PRICE  = 1.50
@@ -119,11 +119,10 @@ class RegularCategory < Category
   RENTAL_POINT = 1
 end
 
-# This subcategory adds custom rental point behaviour
 class NewReleaseCategory < Category
   PRICE_AMOUNT       = 3.00
   EXTRA_PRICE        = 0
-  RENTAL_DAYS        = 0   # 0 = unlimited rental period with extra charge penalty
+  RENTAL_DAYS        = 0   # 0 = unlimited rental period  (no extra charge penalty)
   RENTAL_POINT       = 1
   EXTRA_RENTAL_POINT = 1
   EXTRA_RENTAL_POINT_QUALIFIER_IN_DAYS = 1
@@ -151,8 +150,11 @@ class ChildrensCategory < Category
   RENTAL_POINT       = 1
 end
 
-# END sub-categories
+# END subcategories
 
+# base class for establishing interface for printing customer statement
+# outputs to stdout
+# subclass to support other formats; html, xml, json etc.
 class Formatter
   attr_reader :customer
   
@@ -169,7 +171,6 @@ class Formatter
     end
   end
 end
-
 class HtmlFormatter < Formatter
   def statement
     builder = ::Nokogiri::HTML::Builder.new do |doc|
@@ -224,7 +225,6 @@ class HtmlFormatter < Formatter
   end
 end
 
-# BEGIN SPECS
 RSpec.describe "Rental Store" do
   let(:customer) { Customer.new(name: "Bob") }
   let(:movie)    { Movie.new(title: "Memento", category: RegularCategory.new) }
@@ -243,7 +243,7 @@ RSpec.describe "Rental Store" do
           expect(customer.total_rental_points).to eql movie.category.rental_point * 2 
         end
 
-        it "returns the total amount" do
+        it "returns the total amount owed" do
           expect(customer.total_amount).to eql movie.category.price_amount * 2 
         end
       end
@@ -261,14 +261,14 @@ RSpec.describe "Rental Store" do
     end
 
     describe "#total_amount" do
-      it "returns the amount owed depending on movie category and date rented" do
+      it "returns the amount owed depending on category" do
         rental = Rental.new(rented_at: Date.today, movie: movie) 
         expect(rental.total_amount).to eql movie.category.price_amount
       end
     end
 
     describe "#rental_points" do
-      it "returns the points accrued depending on movie category and date rented" do
+      it "returns the points accrued depending on category" do
         rental = Rental.new(rented_at: Date.today, movie: movie) 
         expect(rental.rental_points).to eql movie.category.rental_point
       end
