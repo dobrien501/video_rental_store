@@ -4,7 +4,9 @@ A refactoring exercise of a video rental store.
 ## Gem dependencies
 
 rspec ~> 3.10.0
+
 nokogiri ~> 1.12.5
+
 money ~> 6.16.0
 
 ## To Run (in bash)
