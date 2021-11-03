@@ -1,6 +1,12 @@
 require "rspec/autorun"
 require "date"
 require "nokogiri"
+require "money"
+
+# money initialiser
+Money.locale_backend   = nil
+Money.default_currency = Money::Currency.new("USD")
+Money.rounding_mode    = BigDecimal::ROUND_HALF_UP
 
 # instance of Customer can rent movies and accumulate rental points
 # and print a statement of rental history
@@ -78,8 +84,8 @@ class Category
   attr_reader :price_amount, :extra_price, :rental_days, :rental_point
 
   def initialize
-    @price_amount   = self.class::PRICE_AMOUNT
-    @extra_price    = self.class::EXTRA_PRICE
+    @price_amount   = Money.from_cents self.class::PRICE_AMOUNT
+    @extra_price    = Money.from_cents self.class::EXTRA_PRICE
     @rental_point   = self.class::RENTAL_POINT
     @rental_days    = self.class::RENTAL_DAYS
   end
@@ -107,14 +113,14 @@ end
 
 # BEGIN sub-categories
 class RegularCategory < Category
-  PRICE_AMOUNT = 2.00
-  EXTRA_PRICE  = 1.50
+  PRICE_AMOUNT = 2000 # fractional
+  EXTRA_PRICE  = 1500 # fractional
   RENTAL_DAYS  = 2
   RENTAL_POINT = 1
 end
 
 class NewReleaseCategory < Category
-  PRICE_AMOUNT       = 3.00
+  PRICE_AMOUNT       = 3000 # fractional
   EXTRA_PRICE        = 0
   RENTAL_DAYS        = 0   # 0 = unlimited rental period  (no extra charge penalty)
   RENTAL_POINT       = 1
@@ -138,8 +144,8 @@ class NewReleaseCategory < Category
 end
 
 class ChildrensCategory < Category
-  PRICE_AMOUNT       = 1.50
-  EXTRA_PRICE        = 1.50
+  PRICE_AMOUNT       = 1500  # fractional
+  EXTRA_PRICE        = 1500  # fractional
   RENTAL_DAYS        = 3
   RENTAL_POINT       = 1
 end
@@ -310,8 +316,8 @@ RSpec.describe "Rental Store" do
   describe RegularCategory do
     it "initializes with a price, extra price, rental days and rental point" do
       category = described_class.new
-      expect(category.price_amount).to eql described_class::PRICE_AMOUNT
-      expect(category.extra_price).to eql described_class::EXTRA_PRICE
+      expect(category.price_amount).to eql Money.from_cents(described_class::PRICE_AMOUNT)
+      expect(category.extra_price).to eql Money.from_cents(described_class::EXTRA_PRICE)
       expect(category.rental_days).to eql described_class::RENTAL_DAYS
       expect(category.rental_point).to eql described_class::RENTAL_POINT
     end
@@ -322,13 +328,16 @@ RSpec.describe "Rental Store" do
         additonal_days = 2
         rented_at      = Date.today - (described_class::RENTAL_DAYS + additonal_days)
         
-        expect(category.amount_for_rental(rented_at)).to eql  described_class::PRICE_AMOUNT + (described_class::EXTRA_PRICE * additonal_days)
+        expect(category.amount_for_rental(rented_at)).to eql( 
+          Money.from_cents(described_class::PRICE_AMOUNT) + 
+          (Money.from_cents(described_class::EXTRA_PRICE) * additonal_days)
+        )
       end
   
       it "charges normal price amount if within rental days" do
         category       = described_class.new
         rented_at      = Date.today - (described_class::RENTAL_DAYS - 1)      
-        expect(category.amount_for_rental(rented_at)).to eql  described_class::PRICE_AMOUNT
+        expect(category.amount_for_rental(rented_at)).to eql  Money.from_cents(described_class::PRICE_AMOUNT)
       end
     end
   end
@@ -345,7 +354,7 @@ RSpec.describe "Rental Store" do
 
     it "has an amount unaffected by no. of days rented" do
       category = described_class.new
-      expect(category.amount_for_rental(Date.today - 1000)).to eql described_class::PRICE_AMOUNT
+      expect(category.amount_for_rental(Date.today - 1000)).to eql Money.from_cents(described_class::PRICE_AMOUNT)
     end
   end
 
@@ -356,13 +365,16 @@ RSpec.describe "Rental Store" do
         additonal_days = 2
         rented_at      = Date.today - (described_class::RENTAL_DAYS + additonal_days)
         
-        expect(category.amount_for_rental(rented_at)).to eql  described_class::PRICE_AMOUNT + (described_class::EXTRA_PRICE * additonal_days)
+        expect(category.amount_for_rental(rented_at)).to eql(
+          Money.from_cents(described_class::PRICE_AMOUNT) + 
+          (Money.from_cents(described_class::EXTRA_PRICE) * additonal_days)
+        )
       end
   
       it "charges normal price amount if within rental days" do
         category       = described_class.new
         rented_at      = Date.today - (described_class::RENTAL_DAYS - 1)      
-        expect(category.amount_for_rental(rented_at)).to eql  described_class::PRICE_AMOUNT
+        expect(category.amount_for_rental(rented_at)).to eql  Money.from_cents(described_class::PRICE_AMOUNT)
       end
     end
   end
