@@ -340,6 +340,10 @@ RSpec.describe "Rental Store" do
       it "belongs to a category" do
         expect(movie.category.is_a?(RegularCategory)).to be_truthy
       end
+
+      it "gets its price from the category" do
+        expect(movie.price).to eql movie.category.price_amount
+      end
     end
   end
 end
