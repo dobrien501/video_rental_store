@@ -104,7 +104,7 @@ class Category
     rental_point
   end
 
-  protected
+  private
 
   def days_rented(rented_at)
     (Date.today - rented_at).to_i 
