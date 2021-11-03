@@ -12,7 +12,7 @@ class Customer
     @name                = name
     @rentals             = []
     @options             = {      # setup options with their defaults
-      formatter: :html
+      formatter: :html            # prefix for a Formatter, e.g HtmlFormatter
     }.merge(options)
   end
 
