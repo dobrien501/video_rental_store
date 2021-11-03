@@ -15,7 +15,7 @@ $ ./run.sh
 ## Brief
 
 ### Requirements
-Read the code and implement the remaining requirements. In addition, include a function to print out the statement in HTML. Consider that in the future you may be asked to add additional formats. Feel free to refactor but stay within the scope of the business logic. 
+Revew the business logic and code then implement the remaining requirements. In addition, include a function to print out the statement in HTML. Consider that in the future you may be asked to add additional formats. Feel free to refactor but stay within the scope of the business logic. 
 
 ### Business Logic
 A customer can printout his statement. On the statement must appear:
@@ -41,7 +41,7 @@ Children's movies:
 - an extra $1.50 is added for each additional day
 - you get 1 frequent renter point
 
-### Original Code
+### Initial Code
 ```
 class Customer
 
