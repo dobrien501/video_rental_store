@@ -3,10 +3,17 @@ require "date"
 require "nokogiri"
 require "money"
 
-# money initialiser
+# initialise money settings
 Money.locale_backend   = nil
 Money.default_currency = Money::Currency.new("USD")
 Money.rounding_mode    = BigDecimal::ROUND_HALF_UP
+
+# ensure any string interpolation of money objects gets formatted
+Money.class_eval do
+  def to_s
+      self.format
+  end
+end
 
 # instance of Customer can rent movies and accumulate rental points
 # and print a statement of rental history
@@ -63,6 +70,8 @@ class Rental
   end
 end
 
+# represents a movie
+# requires a title:String and a category:Category
 class Movie
   attr_reader :title, :category
 
@@ -76,7 +85,7 @@ class Movie
   end
 end
 
-# Base class to represent categories
+# Base class to represent a category
 # sets up the standard properties of a category
 # and defines the behaviour for calculating the amount owed in a rental period
 # subclasses can override with their own behaviours.
@@ -115,8 +124,8 @@ end
 class RegularCategory < Category
   PRICE_AMOUNT = 2000 # fractional
   EXTRA_PRICE  = 1500 # fractional
-  RENTAL_DAYS  = 2
-  RENTAL_POINT = 1
+  RENTAL_DAYS  = 2    # how many days a category can be rented before extra charges are applied
+  RENTAL_POINT = 1    # the amount of points a customer receives for renting this category
 end
 
 class NewReleaseCategory < Category
@@ -152,10 +161,31 @@ end
 
 # END subcategories
 
-# base class for establishing interface for printing customer statement
-# outputs to stdout
-# subclass to support other formats; html, xml, json etc.
+# Base class for establishing the interface for printing customer statement
+# subclass to support formats; html, xml, json etc.
 class Formatter
+
+  # provides a class method for temporary overriding the 
+  # formatting rules of money objects
+  # usage: 
+  # MyClass << Formatter
+  # ...
+  # money_format({no_cents: true, with_currency: true})
+  # ...
+  # end
+  # see https://www.rubydoc.info/gems/money/Money/Formatter for latest rules
+  def self.money_format(rules={})
+    prepend(Module.new do 
+      define_method("statement") do |*args|
+        default_rules                  = Money.default_formatting_rules
+        Money.default_formatting_rules = rules
+        res = super(*args)
+        Money.default_formatting_rules = default_rules
+        return res
+      end
+    end)
+  end
+
   attr_reader :customer
   
   def initialize(customer)
@@ -168,6 +198,7 @@ class Formatter
 end
 
 class PlainFormatter < Formatter
+
   def statement
     puts "Rental Store Statement as of #{Date.today}"
     puts "============================================="
@@ -178,6 +209,9 @@ class PlainFormatter < Formatter
   end
 end
 class HtmlFormatter < Formatter
+
+  money_format({ html_wrap: true })
+
   def statement
     builder = ::Nokogiri::HTML::Builder.new do |doc|
       doc.html {
@@ -227,7 +261,12 @@ class HtmlFormatter < Formatter
         }
       }
     end
-    puts builder.to_html
+
+    # some of the string interporations (e.g. money strings) contain inline html 
+    # that Nokogiri:XML will escape
+    # so we unescape the final output
+    # this is deemed safe as we have 100% ownership of our strings 
+    puts CGI::unescape_html(builder.to_html)
   end
 end
 
@@ -257,12 +296,7 @@ RSpec.describe "Rental Store" do
 
     describe "#statement" do
       before :each do
-        allow(STDOUT).to receive(:puts) # silence output
-      end
-
-      it "by default uses the html formatter" do
-        expect(HtmlFormatter).to receive(:new).and_call_original 
-        customer.statement
+        allow(STDOUT).to receive(:puts) # silence output 
       end
       
       it "can format in html" do
